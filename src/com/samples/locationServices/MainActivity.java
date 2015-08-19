@@ -104,21 +104,27 @@ public class MainActivity extends Activity {
 		
 		acquireButton = new Button(this);
 		acquireButton.setText("Start Acquisition");
-		acquireButton.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				if (stopClicked.compareAndSet(true, false)) {
-					acquireLocation();
-					startAsyncTask();
-					acquireButton.setText("Stop Acquisition");
-				}
-				else {
-					stopAcquisition("Acquisition stopped");
-					stopClicked.set(true);
-				}
-			}
-
-		});
+		if(android.os.Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1){
+	        acquireButton.setOnClickListener(new View.OnClickListener() {
+	                @Override
+	                public void onClick(View v) {
+	                    getLocation();
+	                }
+	            });
+	        }
+	        else{
+	            acquireButton.setOnClickListener(new View.OnClickListener() {
+	                @Override
+	                public void onClick(View v) {
+	                    if (!(WLClient.getInstance().getContext().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)
+	                            == PackageManager.PERMISSION_GRANTED))
+	                        requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, GET_LOCATION_PERMISSION);
+	                    else {
+	                        getLocation();
+	                    }
+	                }
+	            });
+	        }
 		linearLayout.addView(acquireButton);
 
 		
@@ -153,7 +159,31 @@ public class MainActivity extends Activity {
 		});
 	}
 
-	
+	public void getLocation(){
+	        if (stopClicked.compareAndSet(true, false)) {
+	            acquireLocation();
+	            startAsyncTask();
+	            acquireButton.setText("Stop Acquisition");
+	        }
+	        else {
+	            stopAcquisition("Acquisition stopped");
+	            stopClicked.set(true);
+	        }
+	}
+	@Override
+	public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+	        switch (requestCode) {
+	            case GET_LOCATION_PERMISSION: {
+	                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+	                    getLocation();
+	                } else { // in case the user deny.
+	                    displayAlert("Permission Denied");
+	                }
+	                return;
+	            }
+	        }
+	}
+    
 	private void stopAcquisition(String alertText) {
 		WLClient.getInstance().getWLDevice().stopAcquisition();
 		stopAsyncTask();
