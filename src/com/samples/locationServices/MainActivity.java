@@ -34,6 +34,10 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
+
 
 import com.worklight.location.api.WLAcquisitionFailureCallbacksConfiguration;
 import com.worklight.location.api.WLAcquisitionPolicy;
@@ -67,6 +71,7 @@ public class MainActivity extends Activity {
 	
 	AtomicBoolean stopClicked;
 	private Button acquireButton;
+	private static final int GET_LOCATION_PERMISSION = 0;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
