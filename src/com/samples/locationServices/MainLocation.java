@@ -1,18 +1,3 @@
-/* 
-* Copyright 2015 IBM Corp.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
 package com.samples.locationServices;
 
 import java.util.Arrays;
@@ -22,23 +7,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.AlertDialog.Builder;
-import android.content.DialogInterface;
-import android.os.AsyncTask;
-import android.os.Bundle;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.ScrollView;
-import android.widget.TextView;
-import android.Manifest;
-import android.content.pm.PackageManager;
-import android.os.Build;
-
-
+import com.samples.locationServices.R;
 import com.worklight.location.api.WLAcquisitionFailureCallbacksConfiguration;
 import com.worklight.location.api.WLAcquisitionPolicy;
 import com.worklight.location.api.WLDevice;
@@ -60,91 +29,59 @@ import com.worklight.wlclient.api.WLFailResponse;
 import com.worklight.wlclient.api.WLResponse;
 import com.worklight.wlclient.api.WLResponseListener;
 
-public class MainActivity extends Activity {
+import android.Manifest;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.AlertDialog.Builder;
+import android.content.DialogInterface;
+import android.content.pm.PackageManager;
+import android.os.AsyncTask;
+import android.os.Build;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+
+public class MainLocation extends Activity {
+
+	private TextView longitude, latitude, timestamp = null;
+	private Button acquireBtn;
 	
-	LinearLayout linearLayout;
-	TextView longitude;
-	TextView latitude;
-	TextView timestamp;
+	private WLDevice wlDevice;
 	
-	WLDevice wlDevice;
-	
-	AtomicBoolean stopClicked;
-	private Button acquireButton;
+	private AtomicBoolean stopClicked;
 	private static final int GET_LOCATION_PERMISSION = 0;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main_location);
+		getActionBar().setTitle("Location Services");
 		
-		linearLayout = new LinearLayout(this);
-		linearLayout.setOrientation(LinearLayout.VERTICAL);
-
-		
-		ScrollView view = new ScrollView(this);
-		view.addView(linearLayout);		
-		setContentView(view);
-		
-		
-		TextView title = new TextView(this);
-		title.setText("MobileFirst Location Services");
-		
-		TextView spacer = new TextView(this);
-		spacer.setText("------------------\n");		
-		
-		linearLayout.addView(title);
-		linearLayout.addView(spacer);
-		
-		TextView explanation = new TextView(this);
-		explanation.setText(
-				"This is a sample application.\n" + 
-				"Your position will appear below.\n" +
-				"Errors will be displayed in alerts\n." +
-				"After 3 seconds, if you haven't moved more than 50 meters, an alert will be displayed and event will be sent to the server.\n" +
-				"Once you have moved more than 200 meters, an alert will be displayed and event will be sent to the server.");
-		
-		linearLayout.addView(explanation);
-
 		stopClicked = new AtomicBoolean(true);
 		
-		acquireButton = new Button(this);
-		acquireButton.setText("Start Acquisition");
-		if(android.os.Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1){
-	        acquireButton.setOnClickListener(new View.OnClickListener() {
-	                @Override
-	                public void onClick(View v) {
-	                    getLocation();
-	                }
-	            });
-	        }
-	        else{
-	            acquireButton.setOnClickListener(new View.OnClickListener() {
-	                @Override
-	                public void onClick(View v) {
-	                    if (!(WLClient.getInstance().getContext().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)
-	                            == PackageManager.PERMISSION_GRANTED))
-	                        requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, GET_LOCATION_PERMISSION);
-	                    else {
-	                        getLocation();
-	                    }
-	                }
-	            });
-	        }
-		linearLayout.addView(acquireButton);
 
-		
-		longitude = new TextView(this);
-		longitude.setText("Longitude: ");
-		
-		latitude = new TextView(this);
-		latitude.setText("Latitude: ");
-		
-		timestamp = new TextView(this);
-		timestamp.setText("Timestamp: ");
+		acquireBtn = (Button) findViewById(R.id.startBtn);
+		acquireBtn = (Button) findViewById(R.id.startBtn);
+		acquireBtn.setOnClickListener(new View.OnClickListener() {
 
-		linearLayout.addView(longitude);
-		linearLayout.addView(latitude);
-		linearLayout.addView(timestamp);
+			@Override
+			public void onClick(View v) {
+				if(android.os.Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1){
+					getLocation();
+			    } else {
+                    if (!(WLClient.getInstance().getContext().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                            == PackageManager.PERMISSION_GRANTED))
+                        requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, GET_LOCATION_PERMISSION);
+                    else {
+                        getLocation();
+                    }
+		       }
+				
+			}
+
+		});
 		
 		WLClient.createInstance(getApplicationContext());
 		
@@ -153,28 +90,29 @@ public class MainActivity extends Activity {
 			
 			@Override
 			public void onSuccess(WLResponse arg0) {
-				// TODO Auto-generated method stub
-				
+				Log.i("Location Services", "Connected Successfully");				
 			}
 			
 			@Override
 			public void onFailure(WLFailResponse arg0) {
-				displayAlert(arg0.getErrorMsg());
+				displayAlert("Connection Failure: " + arg0.getErrorMsg());
 			}
 		});
+		
 	}
-
+	
 	public void getLocation(){
-	        if (stopClicked.compareAndSet(true, false)) {
-	            acquireLocation();
-	            startAsyncTask();
-	            acquireButton.setText("Stop Acquisition");
-	        }
-	        else {
-	            stopAcquisition("Acquisition stopped");
-	            stopClicked.set(true);
-	        }
+        if (stopClicked.compareAndSet(true, false)) {
+            acquireLocation();
+            startAsyncTask();
+            acquireBtn.setText("Stop Acquisition");
+        }
+        else {
+            stopAcquisition("Acquisition stopped");
+            stopClicked.set(true);
+        }
 	}
+	
 	@Override
 	public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
 	        switch (requestCode) {
@@ -188,15 +126,13 @@ public class MainActivity extends Activity {
 	            }
 	        }
 	}
-    
+
 	private void stopAcquisition(String alertText) {
 		WLClient.getInstance().getWLDevice().stopAcquisition();
 		stopAsyncTask();
 		displayAlert(alertText);
-		acquireButton.setText("Start Acquisition");
-	}			
-
-	
+		acquireBtn.setText("Start Acquisition");
+	}	
 	
 	private void startAsyncTask() {
 		// to keep running while in the background you should bind to a background or foreground service.
@@ -218,13 +154,12 @@ public class MainActivity extends Activity {
 			
 		}.execute();
 	}
-		
+	
 	@Override
 	protected void onDestroy() {
 		stopAsyncTask();
 		super.onDestroy();
 	}
-	
 	
 	private void stopAsyncTask() {
 		stopClicked.set(true);
@@ -232,7 +167,7 @@ public class MainActivity extends Activity {
 			stopClicked.notifyAll();
 		}
 	}
-
+	
 	// acquires a location and then starts on-going acquisition
 	// should be a called in a Looper thread, such as the UI thread
 	void acquireLocation() {	
@@ -336,19 +271,22 @@ public class MainActivity extends Activity {
 	void displayPosition(final WLGeoPosition pos) {
 		runOnUiThread((new Runnable() {
 			public void run() {
-				longitude.setText("Longitude: " + pos.getCoordinate().getLongitude());
-				latitude.setText("Latitude: " + pos.getCoordinate().getLatitude());
-				timestamp.setText("Timstamp: " + new Date(pos.getTimestamp()));
+				longitude = (TextView) findViewById(R.id.longitudeRes);
+				longitude.setText("" + pos.getCoordinate().getLongitude());
+				latitude = (TextView) findViewById(R.id.latitudeRes);
+				latitude.setText("" + pos.getCoordinate().getLatitude());
+				timestamp = (TextView) findViewById(R.id.timestampRes);
+				timestamp.setText("" + new Date(pos.getTimestamp()));
 			}
 		}));
 	}
-
+	
 	private void displayAlert(final String message) {
 		runOnUiThread(new Runnable() {
 			
 			@Override
 			public void run() {
-				AlertDialog.Builder builder = new Builder(MainActivity.this);
+				AlertDialog.Builder builder = new Builder(MainLocation.this);
 				
 				builder.setMessage(message)
 					   .setCancelable(false)
@@ -368,5 +306,6 @@ public class MainActivity extends Activity {
 	private String getGeoErrorMessage(final WLGeoError geoErr) {
 		return "Error acquiring geo (" + geoErr.getErrorCode() + "): " + geoErr.getMessage();
 	}
+	
 
 }
