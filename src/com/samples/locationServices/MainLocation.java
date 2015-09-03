@@ -1,3 +1,6 @@
+/**
+* Copyright 2015 IBM Corp.
+*/
 package com.samples.locationServices;
 
 import java.util.Arrays;
@@ -47,20 +50,20 @@ public class MainLocation extends Activity {
 
 	private TextView longitude, latitude, timestamp = null;
 	private Button acquireBtn;
-	
+
 	private WLDevice wlDevice;
-	
+
 	private AtomicBoolean stopClicked;
 	private static final int GET_LOCATION_PERMISSION = 0;
-	
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main_location);
 		getActionBar().setTitle("Location Services");
-		
+
 		stopClicked = new AtomicBoolean(true);
-		
+
 
 		acquireBtn = (Button) findViewById(R.id.startBtn);
 		acquireBtn = (Button) findViewById(R.id.startBtn);
@@ -78,29 +81,29 @@ public class MainLocation extends Activity {
                         getLocation();
                     }
 		       }
-				
+
 			}
 
 		});
-		
+
 		WLClient.createInstance(getApplicationContext());
-		
+
 		wlDevice = WLClient.getInstance().getWLDevice();
 		WLClient.getInstance().connect(new WLResponseListener() {
-			
+
 			@Override
 			public void onSuccess(WLResponse arg0) {
-				Log.i("Location Services", "Connected Successfully");				
+				Log.i("Location Services", "Connected Successfully");
 			}
-			
+
 			@Override
 			public void onFailure(WLFailResponse arg0) {
 				displayAlert("Connection Failure: " + arg0.getErrorMsg());
 			}
 		});
-		
+
 	}
-	
+
 	public void getLocation(){
         if (stopClicked.compareAndSet(true, false)) {
             acquireLocation();
@@ -112,7 +115,7 @@ public class MainLocation extends Activity {
             stopClicked.set(true);
         }
 	}
-	
+
 	@Override
 	public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
 	        switch (requestCode) {
@@ -132,8 +135,8 @@ public class MainLocation extends Activity {
 		stopAsyncTask();
 		displayAlert(alertText);
 		acquireBtn.setText("Start Acquisition");
-	}	
-	
+	}
+
 	private void startAsyncTask() {
 		// to keep running while in the background you should bind to a background or foreground service.
 		// since this isn't the point of this sample, we're going to use a hack, but this isn't the recommended way:
@@ -148,48 +151,48 @@ public class MainLocation extends Activity {
 						}catch(InterruptedException e) {
 						}
 				}
-				
+
 				return null;
 			}
-			
+
 		}.execute();
 	}
-	
+
 	@Override
 	protected void onDestroy() {
 		stopAsyncTask();
 		super.onDestroy();
 	}
-	
+
 	private void stopAsyncTask() {
 		stopClicked.set(true);
 		synchronized(stopClicked) {
 			stopClicked.notifyAll();
 		}
 	}
-	
+
 	// acquires a location and then starts on-going acquisition
 	// should be a called in a Looper thread, such as the UI thread
-	void acquireLocation() {	
+	void acquireLocation() {
 		// use GPS to get the user's location
 		final WLGeoAcquisitionPolicy geoPolicy = WLGeoAcquisitionPolicy.getLiveTrackingProfile();
 		geoPolicy.setTimeout(60000); // set timeout to 1 minute
 		geoPolicy.setMaximumAge(10000); // allow to use a position that is 10 seconds old
-		
+
 		// get the user's current position
 		wlDevice.acquireGeoPosition(
 				new WLGeoCallback() {
-					
+
 					@Override
 					public void execute(final WLGeoPosition pos) {
 						// when we receive the position, we display it and start on-going acquisition
 						displayPosition(pos);
-						
+
 						final WLAcquisitionFailureCallbacksConfiguration failureCallbacks = new WLAcquisitionFailureCallbacksConfiguration();
 						failureCallbacks.setGeoFailureCallback(new WLGeoFailureCallback() {
 							@Override
 							public void execute(WLGeoError geoErr) {
-								displayAlert(getGeoErrorMessage(geoErr));				
+								displayAlert(getGeoErrorMessage(geoErr));
 							}
 						});
 
@@ -200,30 +203,30 @@ public class MainLocation extends Activity {
 								wlDevice.startAcquisition(new WLLocationServicesConfiguration()
 									.setPolicy(new WLAcquisitionPolicy().setGeoPolicy(geoPolicy))
 									.setTriggers(getTriggersConfig(pos))
-									.setFailureCallbacks(Arrays.asList(failureCallbacks)));								
+									.setFailureCallbacks(Arrays.asList(failureCallbacks)));
 							}
 						});
 					}
 				},
 				new WLGeoFailureCallback() {
-					
+
 					@Override
 					public void execute(final WLGeoError geoError) {
 						runOnUiThread(new Runnable() {
 							public void run() {
-								stopAcquisition(getGeoErrorMessage(geoError));								
+								stopAcquisition(getGeoErrorMessage(geoError));
 							}
-						});						
+						});
 					}
 				},
-				geoPolicy);				
+				geoPolicy);
 	}
-	
+
 	WLTriggersConfiguration getTriggersConfig(WLGeoPosition pos) {
 		WLTriggersConfiguration triggers = new WLTriggersConfiguration();
 		triggers.getGeoTriggers().put("posChange",
 				new WLGeoPositionChangeTrigger()
-					.setCallback(new WLTriggerCallback() {									
+					.setCallback(new WLTriggerCallback() {
 						@Override
 						public void execute(WLDeviceContext deviceContext) {
 							displayPosition(deviceContext.getGeoPosition());
@@ -232,7 +235,7 @@ public class MainLocation extends Activity {
 		triggers.getGeoTriggers().put("leftArea",
 				new WLGeoExitTrigger()
 						.setArea(new WLCircle(pos.getCoordinate(), 200))
-						.setCallback(new WLTriggerCallback() {														
+						.setCallback(new WLTriggerCallback() {
 							@Override
 							public void execute(WLDeviceContext deviceContext) {
 								displayAlert("Left the area");
@@ -250,7 +253,7 @@ public class MainLocation extends Activity {
 						.setArea(new WLCircle(pos.getCoordinate(), 50))
 						.setDwellingTime(3000)
 						.setCallback(new WLTriggerCallback() {
-							
+
 							@Override
 							public void execute(WLDeviceContext deviceContext) {
 								displayAlert("Still in the vicinity");
@@ -263,10 +266,10 @@ public class MainLocation extends Activity {
 								WLClient.getInstance().transmitEvent(event, true);
 							}
 						}));
-		
+
 		return triggers;
 	}
-	
+
 	// display the position to the user
 	void displayPosition(final WLGeoPosition pos) {
 		runOnUiThread((new Runnable() {
@@ -280,14 +283,14 @@ public class MainLocation extends Activity {
 			}
 		}));
 	}
-	
+
 	private void displayAlert(final String message) {
 		runOnUiThread(new Runnable() {
-			
+
 			@Override
 			public void run() {
 				AlertDialog.Builder builder = new Builder(MainLocation.this);
-				
+
 				builder.setMessage(message)
 					   .setCancelable(false)
 					   .setPositiveButton("OK",new DialogInterface.OnClickListener() {
@@ -295,8 +298,8 @@ public class MainLocation extends Activity {
 						@Override
 						public void onClick(DialogInterface dialog, int which) {
 						}
-					   });					
-				
+					   });
+
 				builder.show();
 			}
 		});
@@ -306,6 +309,6 @@ public class MainLocation extends Activity {
 	private String getGeoErrorMessage(final WLGeoError geoErr) {
 		return "Error acquiring geo (" + geoErr.getErrorCode() + "): " + geoErr.getMessage();
 	}
-	
+
 
 }
